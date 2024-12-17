@@ -50,36 +50,6 @@ public class Client {
         }
     }
 
-    public void sendMessage() {
-        ActionListener sendAction = new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    String messageToSend = messageField.getText();
-                    if (!messageToSend.isEmpty()) {
-                        bufferedWriter.write(username + ": " + messageToSend);
-                        bufferedWriter.newLine();
-                        bufferedWriter.flush();
-                        messageField.setText("");
-                        appendMessage(username + ": " + messageToSend);
-                    }
-                } catch (IOException ex) {
-                    closeEverything(socket, bufferedReader, bufferedWriter);
-                }
-            }
-        };
-
-        sendButton.addActionListener(sendAction);
-        messageField.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                    sendAction.actionPerformed(null);
-                }
-            }
-        });
-    }
-
     public void createRoom() {
         createRoomButton.addActionListener(new ActionListener() {
             @Override
@@ -100,25 +70,70 @@ public class Client {
     }
 
     public void listenForMessage() {
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                String messageFromChat;
-
-                while (socket.isConnected()) {
-                    try {
-                        messageFromChat = bufferedReader.readLine();
-                        if (messageFromChat != null) {
+        new Thread(() -> {
+            String messageFromChat;
+    
+            while (socket.isConnected()) {
+                try {
+                    messageFromChat = bufferedReader.readLine();
+                    if (messageFromChat != null) {
+                        if (messageFromChat.startsWith("USER_ADDED:")) {
+                            String newUser = messageFromChat.substring("USER_ADDED:".length());
+                            // Avoid adding the user's own name to the user list
+                            if (!newUser.equals(username) && !userListModel.contains(newUser)) {
+                                userListModel.addElement(newUser);
+                            }
+                        } else if (messageFromChat.startsWith("USER_REMOVED:")) {
+                            String userToRemove = messageFromChat.substring("USER_REMOVED:".length());
+                            userListModel.removeElement(userToRemove);
+                        } else if (messageFromChat.startsWith("ROOM_ADDED:")) {
+                            String newRoom = messageFromChat.substring("ROOM_ADDED:".length());
+                            if (!roomListModel.contains(newRoom)) {
+                                roomListModel.addElement(newRoom);
+                            }
+                        } else {
+                            // Display messages received from the server
                             appendMessage(messageFromChat);
                         }
-                    } catch (IOException e) {
-                        closeEverything(socket, bufferedReader, bufferedWriter);
-                        break;
                     }
+                } catch (IOException e) {
+                    closeEverything(socket, bufferedReader, bufferedWriter);
+                    break;
                 }
             }
         }).start();
     }
+    
+    public void sendMessage() {
+        ActionListener sendAction = new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    String messageToSend = messageField.getText().trim();
+                    if (!messageToSend.isEmpty()) {
+                        // Send the message to the server without appending locally
+                        bufferedWriter.write(username + ": " + messageToSend);
+                        bufferedWriter.newLine();
+                        bufferedWriter.flush();
+                        messageField.setText(""); // Clear the message field
+                    }
+                } catch (IOException ex) {
+                    closeEverything(socket, bufferedReader, bufferedWriter);
+                }
+            }
+        };
+    
+        sendButton.addActionListener(sendAction);
+        messageField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                    sendAction.actionPerformed(null);
+                }
+            }
+        });
+    }
+    
     
 
     private void appendMessage(String message) {
