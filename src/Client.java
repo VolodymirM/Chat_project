@@ -161,6 +161,31 @@ public class Client {
                     }
                     System.out.println("Joined room: " + room);
                 }
+                else {
+                    userListView.clearSelection();
+                }
+            }
+        });
+
+       userListView.addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                if (!e.getValueIsAdjusting()) {
+                    room = userListView.getSelectedValue();
+                    chatTextArea.setText("");
+                    try {
+                        // Inform the server about joining the selected room
+                        bufferedWriter.write("JOIN_ROOM:" + room);
+                        bufferedWriter.newLine();
+                        bufferedWriter.flush();
+                    } catch (IOException ex) {
+                        closeEverything(socket, bufferedReader, bufferedWriter);
+                    }
+                    System.out.println("Joined room: " + room);
+                }
+                else {
+                    roomListView.clearSelection();
+                }
             }
         });
     }
