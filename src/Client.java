@@ -1,20 +1,12 @@
 import java.awt.*;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.net.Socket;
 import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
+import java.awt.event.*;
 
 public class Client {
     // Connection variables
@@ -192,12 +184,11 @@ public class Client {
         });
     }
     
+    // The function creates a unique name for a private dialoge
     public static String combineStrings(String string1, String string2) {
-        // Step 1: Sort the characters of each string
         String sorted1 = sortString(string1);
         String sorted2 = sortString(string2);
 
-        // Step 2: Concatenate sorted strings in lexicographical order
         if (sorted1.compareTo(sorted2) <= 0) {
             return sorted1 + sorted2;
         } else {

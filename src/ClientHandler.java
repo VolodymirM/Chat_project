@@ -1,19 +1,16 @@
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.io.*;
 import java.net.Socket;
 import java.util.ArrayList;
 
 class ClientHandler implements Runnable {
     public static ArrayList<ClientHandler> clientHandlers = new ArrayList<>();
     public static ArrayList<String> rooms = new ArrayList<>();
+    public static ArrayList<String> messages = new ArrayList<>();
     private Socket socket;
     private BufferedReader bufferedReader;
     private BufferedWriter bufferedWriter;
-    private String clientUsername;
-    private String currentRoom = ""; // Track the room the client is in
+    public String clientUsername;
+    private String currentRoom = "";
 
     public ClientHandler(Socket socket) {
         try {
@@ -21,16 +18,11 @@ class ClientHandler implements Runnable {
             this.bufferedWriter = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
             this.bufferedReader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             this.clientUsername = bufferedReader.readLine();
-
             clientHandlers.add(this);
 
-            // Notify all clients about the new user
             broadcastUserAdded(clientUsername);
-
-            // Send existing users and rooms to the new client
             sendExistingUsersAndRooms();
 
-            //broadcastMessage("SERVER: " + clientUsername + " has joined the chat!", currentRoom);
         } catch (IOException e) {
             closeEverything(socket, bufferedReader, bufferedWriter);
         }
@@ -62,9 +54,9 @@ class ClientHandler implements Runnable {
     }
 
     public void broadcastMessage(String messageToSend, String room) {
+        messages.add(messageToSend); // Log the message
         for (ClientHandler clientHandler : clientHandlers) {
             try {
-                // Only send messages to clients in the same room
                 if (clientHandler.currentRoom.equals(room)) {
                     clientHandler.bufferedWriter.write(messageToSend);
                     clientHandler.bufferedWriter.newLine();
@@ -75,7 +67,6 @@ class ClientHandler implements Runnable {
             }
         }
     }
-    
 
     private void broadcastUserAdded(String username) {
         for (ClientHandler clientHandler : clientHandlers) {
@@ -139,7 +130,6 @@ class ClientHandler implements Runnable {
     public void removeClientHandler() {
         clientHandlers.remove(this);
         broadcastUserRemoved(clientUsername);
-        //broadcastMessage("SERVER: " + clientUsername + " has left the chat!", currentRoom);
     }
 
     public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
