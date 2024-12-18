@@ -6,6 +6,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
 import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
@@ -17,6 +20,7 @@ public class Client {
     private BufferedReader bufferedReader;
     private BufferedWriter bufferedWriter;
     private String username;
+    private String room = "";
 
     // UI variables
     private JTextArea chatTextArea;
@@ -25,7 +29,9 @@ public class Client {
     private JTextField roomField;
     private JButton createRoomButton;
     private DefaultListModel<String> roomListModel;
+    private JList<String> roomListView;
     private DefaultListModel<String> userListModel; // For connected users
+    private JList<String> userListView;
 
     public Client(Socket socket, String username) {
         try {
@@ -108,6 +114,10 @@ public class Client {
         ActionListener sendAction = new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                if (room.equals("")) {
+                    messageField.setText("");
+                    return;
+                }
                 try {
                     String messageToSend = messageField.getText().trim();
                     if (!messageToSend.isEmpty()) {
@@ -134,6 +144,37 @@ public class Client {
         });
     }
     
+    public void chooseChat() {
+        roomListView.addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                // Clear userListView selection when a room is selected
+                if (!e.getValueIsAdjusting()) { // Avoid triggering multiple times
+                    userListView.clearSelection();
+                }
+                else {
+                    room = roomListView.getSelectedValue();
+                    chatTextArea.setText("");
+                    System.out.println(room);
+                }
+            }
+        });
+    
+        userListView.addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                // Clear userListView selection when a room is selected
+                if (!e.getValueIsAdjusting()) { // Avoid triggering multiple times
+                    roomListView.clearSelection();
+                }
+                else {
+                    room = userListView.getSelectedValue();
+                    chatTextArea.setText("");
+                    System.out.println(room);
+                }
+            }
+        });
+    }
     
 
     private void appendMessage(String message) {
@@ -168,14 +209,14 @@ public class Client {
 
         // User list
         userListModel = new DefaultListModel<>();
-        JList<String> userListView = new JList<>(userListModel);
+        userListView = new JList<>(userListModel);
         JScrollPane userListScrollPane = new JScrollPane(userListView);
         userListScrollPane.setBorder(BorderFactory.createTitledBorder("Users"));
         leftPanel.add(userListScrollPane, BorderLayout.NORTH);
 
         // Room list and input for creating a room
         roomListModel = new DefaultListModel<>();
-        JList<String> roomListView = new JList<>(roomListModel);
+        roomListView = new JList<>(roomListModel);
         JScrollPane roomListScrollPane = new JScrollPane(roomListView);
         roomListScrollPane.setBorder(BorderFactory.createTitledBorder("Rooms"));
         leftPanel.add(roomListScrollPane, BorderLayout.CENTER);
@@ -202,6 +243,7 @@ public class Client {
         // Bottom panel for typing and sending messages
         JPanel inputPanel = new JPanel();
         inputPanel.setLayout(new BorderLayout());
+        inputPanel.setEnabled(false);
 
         // Text field for typing a message
         messageField = new JTextField();
@@ -222,6 +264,7 @@ public class Client {
         frame.add(mainPanel);
 
         // Setup event listeners
+        chooseChat();
         sendMessage();
         createRoom();
         
