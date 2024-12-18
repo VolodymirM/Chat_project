@@ -148,33 +148,23 @@ public class Client {
         roomListView.addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
-                // Clear userListView selection when a room is selected
-                if (!e.getValueIsAdjusting()) { // Avoid triggering multiple times
-                    userListView.clearSelection();
-                }
-                else {
+                if (!e.getValueIsAdjusting()) {
                     room = roomListView.getSelectedValue();
                     chatTextArea.setText("");
-                    System.out.println(room);
-                }
-            }
-        });
-    
-        userListView.addListSelectionListener(new ListSelectionListener() {
-            @Override
-            public void valueChanged(ListSelectionEvent e) {
-                // Clear userListView selection when a room is selected
-                if (!e.getValueIsAdjusting()) { // Avoid triggering multiple times
-                    roomListView.clearSelection();
-                }
-                else {
-                    room = userListView.getSelectedValue();
-                    chatTextArea.setText("");
-                    System.out.println(room);
+                    try {
+                        // Inform the server about joining the selected room
+                        bufferedWriter.write("JOIN_ROOM:" + room);
+                        bufferedWriter.newLine();
+                        bufferedWriter.flush();
+                    } catch (IOException ex) {
+                        closeEverything(socket, bufferedReader, bufferedWriter);
+                    }
+                    System.out.println("Joined room: " + room);
                 }
             }
         });
     }
+    
     
 
     private void appendMessage(String message) {

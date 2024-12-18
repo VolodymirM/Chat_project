@@ -13,6 +13,7 @@ class ClientHandler implements Runnable {
     private BufferedReader bufferedReader;
     private BufferedWriter bufferedWriter;
     private String clientUsername;
+    private String currentRoom = ""; // Track the room the client is in
 
     public ClientHandler(Socket socket) {
         try {
@@ -29,7 +30,7 @@ class ClientHandler implements Runnable {
             // Send existing users and rooms to the new client
             sendExistingUsersAndRooms();
 
-            broadcastMessage("SERVER: " + clientUsername + " has joined the chat!");
+            //broadcastMessage("SERVER: " + clientUsername + " has joined the chat!", currentRoom);
         } catch (IOException e) {
             closeEverything(socket, bufferedReader, bufferedWriter);
         }
@@ -46,8 +47,11 @@ class ClientHandler implements Runnable {
                     if (messageFromClient.startsWith("CREATE_ROOM:")) {
                         String roomName = messageFromClient.substring("CREATE_ROOM:".length());
                         createRoom(roomName);
+                    } else if (messageFromClient.startsWith("JOIN_ROOM:")) {
+                        this.currentRoom = messageFromClient.substring("JOIN_ROOM:".length());
+                        broadcastMessage("SERVER: " + clientUsername + " joined room " + currentRoom, currentRoom);
                     } else {
-                        broadcastMessage(messageFromClient);
+                        broadcastMessage(messageFromClient, currentRoom);
                     }
                 }
             } catch (IOException e) {
@@ -57,17 +61,21 @@ class ClientHandler implements Runnable {
         }
     }
 
-    public void broadcastMessage(String messageToSend) {
+    public void broadcastMessage(String messageToSend, String room) {
         for (ClientHandler clientHandler : clientHandlers) {
             try {
-                clientHandler.bufferedWriter.write(messageToSend);
-                clientHandler.bufferedWriter.newLine();
-                clientHandler.bufferedWriter.flush();
+                // Only send messages to clients in the same room
+                if (clientHandler.currentRoom.equals(room)) {
+                    clientHandler.bufferedWriter.write(messageToSend);
+                    clientHandler.bufferedWriter.newLine();
+                    clientHandler.bufferedWriter.flush();
+                }
             } catch (IOException e) {
                 closeEverything(socket, bufferedReader, bufferedWriter);
             }
         }
     }
+    
 
     private void broadcastUserAdded(String username) {
         for (ClientHandler clientHandler : clientHandlers) {
@@ -131,7 +139,7 @@ class ClientHandler implements Runnable {
     public void removeClientHandler() {
         clientHandlers.remove(this);
         broadcastUserRemoved(clientUsername);
-        broadcastMessage("SERVER: " + clientUsername + " has left the chat!");
+        //broadcastMessage("SERVER: " + clientUsername + " has left the chat!", currentRoom);
     }
 
     public void closeEverything(Socket socket, BufferedReader bufferedReader, BufferedWriter bufferedWriter) {
