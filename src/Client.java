@@ -9,6 +9,8 @@ import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
@@ -171,7 +173,7 @@ public class Client {
             @Override
             public void valueChanged(ListSelectionEvent e) {
                 if (!e.getValueIsAdjusting()) {
-                    room = userListView.getSelectedValue();
+                    room = combineStrings(username, userListView.getSelectedValue());
                     chatTextArea.setText("");
                     try {
                         // Inform the server about joining the selected room
@@ -190,7 +192,24 @@ public class Client {
         });
     }
     
-    
+    public static String combineStrings(String string1, String string2) {
+        // Step 1: Sort the characters of each string
+        String sorted1 = sortString(string1);
+        String sorted2 = sortString(string2);
+
+        // Step 2: Concatenate sorted strings in lexicographical order
+        if (sorted1.compareTo(sorted2) <= 0) {
+            return sorted1 + sorted2;
+        } else {
+            return sorted2 + sorted1;
+        }
+    }
+
+    private static String sortString(String input) {
+        char[] chars = input.toCharArray();
+        Arrays.sort(chars);
+        return new String(chars);
+    }
 
     private void appendMessage(String message) {
         chatTextArea.append(message + "\n");
